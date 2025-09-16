@@ -13,16 +13,19 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser(
         prog="Pod2Aria",
-        description="Compile download links from a podcast rss feed into a list for aria2c"
+        description="Compile download links from a podcast rss feed into a list for aria2c. Optionally construct filenames from episode title and publication date. Useful for patreon feeds where the filename is obscured and sometimes downloads as 1.mp3"
     )
     parser.add_argument('rss_url')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-m', '--rename-missing', action='store_const', const='missing', dest='rename')
-    group.add_argument('-a', '--rename-all', action='store_const', const='all', dest='rename')
-    group.add_argument('-s', '--skip-rename', action='store_const', const='skip', dest='rename')
+    group.add_argument('-m', '--rename-missing', action='store_const', const='missing', dest='rename',
+        help="(Patreon) Construct new filenames missing from header.")
+    group.add_argument('-a', '--rename-all', action='store_const', const='all', dest='rename',
+        help="Construct new filenames for every file.")
+    group.add_argument('-s', '--skip-rename', action='store_const', const='skip', dest='rename',
+        help="Keep all original filenames.")
     parser.add_argument('-x', '--xml-file', default='feed.xml', help="local copy of the rss feed")
-    parser.add_argument('-o', '--output-file', default='urls.txt', help="file for writing the final list of urls")
-    parser.set_defaults(rename='missing')
+    parser.add_argument('-o', '--output-file', default='urls.txt', help="file for saving the final list of urls")
+    parser.set_defaults(rename='skip')
     return parser.parse_args()
 
 
