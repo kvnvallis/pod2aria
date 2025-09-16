@@ -12,14 +12,16 @@ import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        prog="Patreon RSS link extractor",
-        description="Compile download links in a list for aria2c"
+        prog="Pod2Aria",
+        description="Compile download links from a podcast rss feed into a list for aria2c"
     )
     parser.add_argument('rss_url')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-m', '--rename-missing', action='store_const', const='missing', dest='rename')
     group.add_argument('-a', '--rename-all', action='store_const', const='all', dest='rename')
     group.add_argument('-s', '--skip-rename', action='store_const', const='skip', dest='rename')
+    parser.add_argument('-x', '--xml-file', default='feed.xml', help="local copy of the rss feed")
+    parser.add_argument('-o', '--output-file', default='urls.txt', help="file for writing the final list of urls")
     parser.set_defaults(rename='missing')
     return parser.parse_args()
 
@@ -36,7 +38,6 @@ def write_new_names(f, item):
     date_str = item.find('pubDate').text
     dt = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z")
     date = dt.strftime("%Y-%m-%d")
-    #print(' out="' + date + ' ' + title + file_ext + '"' + '\n')
     safe_title = sanitize(get_title(f, item))
     file_ext = os.path.splitext(urlsplit(get_url(f, item)).path)[1]
     filename = '[' + date + '] ' + safe_title + file_ext
@@ -57,17 +58,17 @@ def sanitize(title):
 def main():
     args = parse_args()
     
-    if not os.path.isfile('feed.xml'):
+    if not os.path.isfile(args.xml_file):
         response = requests.get(args.rss_url)
-        with open('feed.xml', 'wb') as f:
+        with open(args.xml_file, 'wb') as f:
             f.write(response.content)
     
-    with open('feed.xml', 'rb') as f:
+    with open(args.xml_file, 'rb') as f:
         tree_root = ET.parse(f).getroot()
    
     fixed_names = []
    
-    with open('urls.txt', 'w') as f:
+    with open(args.output_file, 'w') as f:
         for item in tree_root.findall('channel/item'):
             title = get_title(f, item)
             url = get_url(f, item)
@@ -88,7 +89,9 @@ def main():
             print("DONE:", title)
             
     print("Fixed", len(fixed_names), "filenames and prepared them for aria2c")
-    
+    print("Download your files with:" + '\n\t' + 'aria2c -i ' + '"' + args.output_file + '"')
+
+  
 if __name__ == "__main__":
     try:
         main()
