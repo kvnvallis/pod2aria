@@ -18,13 +18,14 @@ def parse_args():
     parser.add_argument('rss_url')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-m', '--rename-missing', action='store_const', const='missing', dest='rename',
-        help="(Patreon) Construct new filenames missing from header.")
+        help="(Patreon) Construct new filenames missing from header")
     group.add_argument('-a', '--rename-all', action='store_const', const='all', dest='rename',
-        help="Construct new filenames for every file.")
+        help="Construct new filenames for every file")
     group.add_argument('-s', '--skip-rename', action='store_const', const='skip', dest='rename',
-        help="Keep all original filenames.")
+        help="Keep all original filenames")
     parser.add_argument('-x', '--xml-file', default='feed.xml', help="local copy of the rss feed")
     parser.add_argument('-o', '--output-file', default='urls.txt', help="file for saving the final list of urls")
+    parser.add_argument('-t', '--podcast', help="Include name of podcast in every renamed file")
     parser.set_defaults(rename='skip')
     return parser.parse_args()
 
@@ -37,13 +38,16 @@ def get_title(f, item):
     return item.find('title').text
 
    
-def write_new_names(f, item):
+def write_new_names(f, item, podname=None):
+    filename = ''
+    if podname:
+        filename = sanitize(podname) + ' '
     date_str = item.find('pubDate').text
     dt = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z")
     date = dt.strftime("%Y-%m-%d")
     safe_title = sanitize(get_title(f, item))
     file_ext = os.path.splitext(urlsplit(get_url(f, item)).path)[1]
-    filename = '[' + date + '] ' + safe_title + file_ext
+    filename = filename + '[' + date + '] ' + safe_title + file_ext
     f.write(' out=' + filename + '\n')
     return filename
     
@@ -85,7 +89,7 @@ def main():
             
             # If no filename in header, make one (to avoid "1.mp3")
             if (args.rename == 'missing' and missing_filename) or args.rename == 'all':
-                filename = write_new_names(f, item)                             
+                filename = write_new_names(f, item, args.podcast)                             
                 fixed_names.append(filename)
                 print("_FIXED:_", filename)
                            
