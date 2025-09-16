@@ -31,13 +31,13 @@ def parse_args():
 
 
 def get_url(f, item):
-    return item.find('enclosure').attrib['url']  
+    return item.find('enclosure').attrib['url']
 
-    
+
 def get_title(f, item):
     return item.find('title').text
 
-   
+
 def write_new_names(f, item, podname=None):
     filename = ''
     if podname:
@@ -50,8 +50,8 @@ def write_new_names(f, item, podname=None):
     filename = filename + '[' + date + '] ' + safe_title + file_ext
     f.write(' out=' + filename + '\n')
     return filename
-    
-    
+
+
 def sanitize(title):
     safe = title.encode('ascii', 'ignore').decode()
     # replace colons with dash for legibility
@@ -60,45 +60,45 @@ def sanitize(title):
     safe = re.sub(r'[<>:"/\\|?*]', '', safe)
     # remove leading/trailing whitespace
     return safe.strip()
-    
+
 
 def main():
     args = parse_args()
-    
+
     if not os.path.isfile(args.xml_file):
         response = requests.get(args.rss_url)
         with open(args.xml_file, 'wb') as f:
             f.write(response.content)
-    
+
     with open(args.xml_file, 'rb') as f:
         tree_root = ET.parse(f).getroot()
-      
+
     with open(args.output_file, 'w') as f:
         for item in tree_root.findall('channel/item'):
             title = get_title(f, item)
             url = get_url(f, item)
-            f.write(url + '\n')        
-            
-            response = requests.head(url, allow_redirects=True)  
+            f.write(url + '\n')
+
+            response = requests.head(url, allow_redirects=True)
             missing_filename = (
                 'Content-Disposition' not in response.headers
                 or 'filename' not in response.headers['Content-Disposition']
             )
-            
+
             # If no filename in header, make one (to avoid "1.mp3")
             if (args.rename == 'missing' and missing_filename) or args.rename == 'all':
-                filename = write_new_names(f, item, args.podcast)                             
+                filename = write_new_names(f, item, args.podcast)
                 new_names.append(filename)
                 print("_RENAMED:_", filename)
-                           
+
             print("DONE:", title)
-        
+
     print("Download your files with:" + '\n\t' + 'aria2c -i ' + '"' + args.output_file + '"')
 
 
 # store names outside of main() so they can be accessed after a keyboard interrupt
 new_names = []
-  
+
 if __name__ == "__main__":
     try:
         main()
