@@ -19,8 +19,6 @@ def parse_args():
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-m', '--rename-missing', action='store_true')
     group.add_argument('-a', '--rename-all', action='store_true')
-    #group.add_argument('-n', '--rename-none', action='store_true')
-    parser.set_defaults(rename_missing=True)
     return parser.parse_args()
 
 
