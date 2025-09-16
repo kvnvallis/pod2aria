@@ -19,13 +19,14 @@ def parse_args():
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-m', '--rename-missing', action='store_true')
     group.add_argument('-a', '--rename-all', action='store_true')
-    group.add_argument('-n', '--rename-none', action='store_true')
+    #group.add_argument('-n', '--rename-none', action='store_true')
     parser.set_defaults(rename_missing=True)
     return parser.parse_args()
 
 
 def get_url(f, item):
-    return item.find('enclosure').attrib['url']    
+    return item.find('enclosure').attrib['url']  
+
     
 def get_title(f, item):
     return item.find('title').text
@@ -70,13 +71,17 @@ def main():
         for item in tree_root.findall('channel/item'):
             title = get_title(f, item)
             url = get_url(f, item)
-            f.write(url + '\n')            
-            response = requests.head(url, allow_redirects=True)   
+            f.write(url + '\n')        
+            
+            response = requests.head(url, allow_redirects=True)  
+            missing_filename = (
+                'Content-Disposition' not in response.headers
+                or 'filename' not in response.headers['Content-Disposition']
+            )
             
             # If no filename in header, make one (to avoid "1.mp3")
-            if not 'Content-Disposition' in response.headers \
-            or not 'filename' in response.headers['Content-Disposition']:
-                filename = write_new_names(f, item)
+            if (args.rename_missing and missing_filename) or args.rename_all:
+                filename = write_new_names(f, item)                             
                 fixed_names.append(filename)
                 print("_FIXED:_", filename)
                            
