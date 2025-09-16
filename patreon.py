@@ -7,11 +7,33 @@ from urllib.parse import urlsplit
 from datetime import datetime
 import json
 import re
+import argparse
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        prog="Patreon RSS link extractor",
+        description="Compile download links in a list for aria2c"
+    )
+    parser.add_argument('rss_url')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-m', '--rename-missing', action='store_true')
+    group.add_argument('-a', '--rename-all', action='store_true')
+    group.add_argument('-n', '--rename-none', action='store_true')
+    parser.set_defaults(rename_missing=True)
+    return parser.parse_args()
+
+
+#def write_urls(open_file):
+    
+    
 
 def main():
-    url = ''
+    #url = ''
+    args = parse_args()
+    
     if not os.path.isfile('feed.xml'):
-        response = requests.get(url)
+        response = requests.get(args.rss_url)
         with open('feed.xml', 'wb') as f:
             f.write(response.content)
     
