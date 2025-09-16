@@ -72,9 +72,7 @@ def main():
     
     with open(args.xml_file, 'rb') as f:
         tree_root = ET.parse(f).getroot()
-   
-    fixed_names = []
-   
+      
     with open(args.output_file, 'w') as f:
         for item in tree_root.findall('channel/item'):
             title = get_title(f, item)
@@ -90,17 +88,22 @@ def main():
             # If no filename in header, make one (to avoid "1.mp3")
             if (args.rename == 'missing' and missing_filename) or args.rename == 'all':
                 filename = write_new_names(f, item, args.podcast)                             
-                fixed_names.append(filename)
-                print("_FIXED:_", filename)
+                new_names.append(filename)
+                print("_RENAMED:_", filename)
                            
             print("DONE:", title)
-            
-    print("Fixed", len(fixed_names), "filenames and prepared them for aria2c")
+        
     print("Download your files with:" + '\n\t' + 'aria2c -i ' + '"' + args.output_file + '"')
 
+
+# store names outside of main() so they can be accessed after a keyboard interrupt
+new_names = []
   
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print('Interrupted')
+        print('Interrupted by user')
+    finally:
+        print("New filenames created:", len(new_names))
+
