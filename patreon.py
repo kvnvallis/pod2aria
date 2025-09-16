@@ -17,8 +17,10 @@ def parse_args():
     )
     parser.add_argument('rss_url')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-m', '--rename-missing', action='store_true')
-    group.add_argument('-a', '--rename-all', action='store_true')
+    group.add_argument('-m', '--rename-missing', action='store_const', const='missing', dest='rename')
+    group.add_argument('-a', '--rename-all', action='store_const', const='all', dest='rename')
+    group.add_argument('-s', '--skip-rename', action='store_const', const='skip', dest='rename')
+    parser.set_defaults(rename='missing')
     return parser.parse_args()
 
 
@@ -78,7 +80,7 @@ def main():
             )
             
             # If no filename in header, make one (to avoid "1.mp3")
-            if (args.rename_missing and missing_filename) or args.rename_all:
+            if (args.rename == 'missing' and missing_filename) or args.rename == 'all':
                 filename = write_new_names(f, item)                             
                 fixed_names.append(filename)
                 print("_FIXED:_", filename)
