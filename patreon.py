@@ -10,14 +10,13 @@ import re
 
 def main():
     url = ''
-    if not os.path.isfile:
+    if not os.path.isfile('feed.xml'):
         response = requests.get(url)
         with open('feed.xml', 'wb') as f:
             f.write(response.content)
-    else:
-        print("feed.xml already exists")
-        with open('feed.xml', 'rb') as f:
-            tree_root = ET.parse(f).getroot()
+    
+    with open('feed.xml', 'rb') as f:
+        tree_root = ET.parse(f).getroot()
    
     fixed_names = []
    
