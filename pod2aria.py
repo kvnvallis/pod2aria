@@ -30,11 +30,11 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_url(f, item):
+def get_url(item):
     return item.find('enclosure').attrib['url']
 
 
-def get_title(f, item):
+def get_title(item):
     return item.find('title').text
 
 
@@ -45,8 +45,8 @@ def write_new_names(f, item, podname=None):
     date_str = item.find('pubDate').text
     dt = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z")
     date = dt.strftime("%Y-%m-%d")
-    safe_title = sanitize(get_title(f, item))
-    file_ext = os.path.splitext(urlsplit(get_url(f, item)).path)[1]
+    safe_title = sanitize(get_title(item))
+    file_ext = os.path.splitext(urlsplit(get_url(item)).path)[1]
     filename = filename + '[' + date + '] ' + safe_title + file_ext
     f.write(' out=' + filename + '\n')
     return filename
@@ -79,8 +79,8 @@ def main():
     
     with open(args.output_file, 'w') as f:
         for item in tree_root.findall('channel/item'):
-            title = get_title(f, item)
-            url = get_url(f, item)
+            title = get_title(item)
+            url = get_url(item)
             f.write(url + '\n')
 
             response = requests.head(url, allow_redirects=True)
