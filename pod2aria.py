@@ -106,12 +106,11 @@ def main():
                 try:
                     response = requests.head(url, allow_redirects=True)
                 except RequestException:
-                    print(f'Warning: No response for title "{title}"')                   
+                    print(f'Warning: No response for title "{title}"')
                     # if there is no response, that means you can't check for a missing filename in the header. So skip the check, and assume the filename is missing
                     missing_filename = True
-                    response = None                    
-                
-                # Set missing_filename to false if filename exists in header 
+                    response = None
+
                 if response != None:
                     missing_filename = (
                         'Content-Disposition' not in response.headers
