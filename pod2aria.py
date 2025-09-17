@@ -15,7 +15,8 @@ def parse_args():
         prog="Pod2Aria",
         description="Compile download links from a podcast rss feed into a list for aria2c. Optionally construct filenames from episode title and publication date. Useful for patreon feeds where the filename is obscured and sometimes downloads as 1.mp3"
     )
-    parser.add_argument('rss_url')
+    parser.add_argument('feed',
+        help="A url for the rss feed, or a local xml file")
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-m', '--rename-missing', action='store_const', const='missing', dest='rename',
         help="(Patreon) Construct new filenames missing from header")
@@ -23,7 +24,6 @@ def parse_args():
         help="Construct new filenames for every file")
     group.add_argument('-s', '--skip-rename', action='store_const', const='skip', dest='rename',
         help="Keep all original filenames")
-    parser.add_argument('-x', '--xml-file', default='feed.xml', help="local copy of the rss feed")
     parser.add_argument('-o', '--output-file', default='urls.txt', help="file for saving the final list of urls")
     parser.add_argument('-t', '--podcast', help="Include name of podcast in every renamed file")
     parser.set_defaults(rename='skip')
@@ -62,17 +62,21 @@ def sanitize(title):
     return safe.strip()
 
 
+def get_xml(path):
+    if (path.startswith("http://") 
+    or path.startswith("https://")):
+        response = requests.get(path)
+        tree_root = ET.fromstring(response.content)
+    elif os.path.isfile(path):
+        with open(path, 'rb') as f:
+            tree_root = ET.parse(f).getroot()
+    return tree_root
+
+
 def main():
-    args = parse_args()
-
-    if not os.path.isfile(args.xml_file):
-        response = requests.get(args.rss_url)
-        with open(args.xml_file, 'wb') as f:
-            f.write(response.content)
-
-    with open(args.xml_file, 'rb') as f:
-        tree_root = ET.parse(f).getroot()
-
+    args = parse_args()    
+    tree_root = get_xml(args.feed)
+    
     with open(args.output_file, 'w') as f:
         for item in tree_root.findall('channel/item'):
             title = get_title(f, item)
