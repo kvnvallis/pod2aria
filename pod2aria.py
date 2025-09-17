@@ -8,6 +8,7 @@ from datetime import datetime
 import json
 import re
 import argparse
+import sys
 
 
 def parse_args():
@@ -62,21 +63,30 @@ def sanitize(title):
     return safe.strip()
 
 
-def get_xml(path):
-    if (path.startswith("http://") 
-    or path.startswith("https://")):
-        response = requests.get(path)
-        tree_root = ET.fromstring(response.content)
-    elif os.path.isfile(path):
-        with open(path, 'rb') as f:
-            tree_root = ET.parse(f).getroot()
+def xml_from_url(path):
+    response = requests.get(path)
+    tree_root = ET.fromstring(response.content)
+    return tree_root
+
+
+def xml_from_file(path):
+    with open(path, 'rb') as f:
+        tree_root = ET.parse(f).getroot()
     return tree_root
 
 
 def main():
-    args = parse_args()    
-    tree_root = get_xml(args.feed)
-    
+    args = parse_args()
+
+    if (args.feed.startswith("http://")
+    or args.feed.startswith("https://")):
+        tree_root = xml_from_url(args.feed)
+    elif os.path.isfile(args.feed):
+        tree_root = xml_from_file(args.feed)
+    else:
+        print("Error: RSS feed is not a valid url or existing file")
+        sys.exit(1)
+
     with open(args.output_file, 'w') as f:
         for item in tree_root.findall('channel/item'):
             title = get_title(item)
