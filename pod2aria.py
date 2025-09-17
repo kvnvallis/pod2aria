@@ -2,6 +2,7 @@
 
 import xml.etree.ElementTree as ET
 import requests
+from requests.exceptions import RequestException
 import os.path
 from urllib.parse import urlsplit
 from datetime import datetime
@@ -48,7 +49,7 @@ def write_new_names(f, item, podname=None):
     date = dt.strftime("%Y-%m-%d")
     safe_title = sanitize(get_title(item))
     file_ext = os.path.splitext(urlsplit(get_url(item)).path)[1]
-    filename = filename + '[' + date + '] ' + safe_title + file_ext
+    filename = filename + f'[{date}] {safe_title}{file_ext}'
     f.write(' out=' + filename + '\n')
     return filename
 
@@ -80,9 +81,17 @@ def main():
 
     if (args.feed.startswith("http://")
     or args.feed.startswith("https://")):
-        tree_root = xml_from_url(args.feed)
+        try:
+            tree_root = xml_from_url(args.feed)
+        except (RequestException, ET.ParseError):
+            print("Error: Failed to get an rss feed from the provided url")
+            sys.exit(1)
     elif os.path.isfile(args.feed):
-        tree_root = xml_from_file(args.feed)
+        try:
+            tree_root = xml_from_file(args.feed)
+        except ET.ParseError:
+            print("Error: Failed to parse rss feed from", args.feed)
+            sys.exit(1)
     else:
         print("Error: RSS feed is not a valid url or existing file")
         sys.exit(1)
@@ -93,11 +102,21 @@ def main():
             url = get_url(item)
             f.write(url + '\n')
 
-            response = requests.head(url, allow_redirects=True)
-            missing_filename = (
-                'Content-Disposition' not in response.headers
-                or 'filename' not in response.headers['Content-Disposition']
-            )
+            if args.rename == 'missing':
+                try:
+                    response = requests.head(url, allow_redirects=True)
+                except RequestException:
+                    print(f'Warning: No response for title "{title}"')                   
+                    # if there is no response, that means you can't check for a missing filename in the header. So skip the check, and assume the filename is missing
+                    missing_filename = True
+                    response = None                    
+                
+                # Set missing_filename to false if filename exists in header 
+                if response != None:
+                    missing_filename = (
+                        'Content-Disposition' not in response.headers
+                        or 'filename' not in response.headers['Content-Disposition']
+                    )
 
             # If no filename in header, make one (to avoid "1.mp3")
             if (args.rename == 'missing' and missing_filename) or args.rename == 'all':
@@ -107,10 +126,11 @@ def main():
 
             print("DONE:", title)
 
-    print("Download your files with:" + '\n\t' + 'aria2c -i ' + '"' + args.output_file + '"')
+    print("Download your files with:")
+    print('\t' + f'aria2c -i "{args.output_file}"')
 
 
-# store names outside of main() so they can be accessed after a keyboard interrupt
+# store outside of main() so they can be accessed after a keyboard interrupt
 new_names = []
 
 if __name__ == "__main__":
@@ -118,6 +138,8 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print('Interrupted by user')
+    except OSError as e:
+        print(f"Failed to open a file - {e}")
     finally:
         print("New filenames created:", len(new_names))
 
